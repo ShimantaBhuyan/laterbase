@@ -176,7 +176,7 @@ Rules:
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: "Question: " + question + "\n\n" + sb.String()},
 		},
-		"max_completion_tokens": 800,
+		"max_completion_tokens": 2000,
 	}
 
 	respBody, respUsage, err := chatCompletion(ctx, apiKey, body)
@@ -238,7 +238,7 @@ func streamAnswer(ctx context.Context, pool *pgxpool.Pool, apiKey, model, questi
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: "Question: " + question + "\n\nRelevant saved links:\n\n" + ctxBlocks.String()},
 		},
-		"max_completion_tokens": 1000,
+		"max_completion_tokens": 4000,
 		"stream":                true,
 		"stream_options":        map[string]bool{"include_usage": true},
 	}
