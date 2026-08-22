@@ -1,0 +1,10 @@
+.env
+node_modules/
+frontend/node_modules/
+backend/tmp/
+*.log
+dist/
+.agents/
+.hermes/
+.impeccable/
+brag-output/

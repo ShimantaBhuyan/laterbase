@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# link-groupy-dump-from-notes — one-time bulk import of URLs from Apple Notes
+#
+# Usage:
+#   ./scripts/dump-from-notes                              # list notes with "Links"
+#   ./scripts/dump-from-notes <note-number>                # dump URLs from note N
+#   ./scripts/dump-from-notes <note-number> --dry-run      # preview URLs without posting
+#
+# Dependencies: memo CLI (uv tool install git+https://github.com/antoniorodr/memo)
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+MEMO="${HOME}/.local/bin/memo"
+API_BASE="${LINK_GROUPY_API:-http://localhost:8080/api}"
+
+# --- parse args ---
+LINKS_NOTE_NUM=""
+DRY_RUN=false
+
+for arg in "$@"; do
+    case "$arg" in
+        --dry-run) DRY_RUN=true ;;
+        *) LINKS_NOTE_NUM="$arg" ;;
+    esac
+done
+
+if ! command -v "$MEMO" &>/dev/null; then
+    echo "❌ memo CLI not found at $MEMO"
+    echo "   Install:"
+    echo "     uv tool install git+https://github.com/antoniorodr/memo"
+    exit 1
+fi
+
+# --- list mode ---
+if [ -z "$LINKS_NOTE_NUM" ]; then
+    echo "📋 Notes with 'Links' in their title:"
+    echo ""
+    "$MEMO" notes -f "Notes" -nc 2>/dev/null | grep -i "links" | head -20
+    echo ""
+    echo "Usage: $0 <note-number> [--dry-run]"
+    echo "Example: $0 1        (import note #1)"
+    echo "         $0 1 --dry-run  (preview without posting)"
+    exit 0
+fi
+
+# --- fetch note ---
+echo "🔍 Fetching note #${LINKS_NOTE_NUM}..."
+NOTE_CONTENT=$("$MEMO" notes -v "$LINKS_NOTE_NUM" -f "Notes" -nc 2>/dev/null)
+
+# Extract URLs — http/https, deduplicated, clean HTML entities
+URLS=$(echo "$NOTE_CONTENT" \
+    | grep -oE 'https?://[a-zA-Z0-9./?=&#%_~@,:;+!()*$#-]+' \
+    | sed 's/&amp;/\&/g' \
+    | sort -u)
+
+TOTAL=$(echo "$URLS" | wc -l | tr -d ' ')
+echo "📎 Found $TOTAL unique URLs in note #${LINKS_NOTE_NUM}"
+echo ""
+
+if [ "$TOTAL" -eq 0 ]; then
+    echo "No URLs found. Exiting."
+    exit 0
+fi
+
+# --- dry run ---
+if [ "$DRY_RUN" = true ]; then
+    echo "═══ DRY RUN — URLs that would be posted ═══"
+    echo "$URLS"
+    echo ""
+    echo "Total: $TOTAL URLs"
+    exit 0
+fi
+
+# --- check API ---
+if ! curl -sf "$API_BASE/../health" 2>/dev/null; then
+    echo "❌ Link Groupy API not reachable at $API_BASE"
+    echo "   Is the stack running? Try: docker compose up -d"
+    exit 1
+fi
+
+# --- import ---
+echo "═══ Importing URLs to Link Groupy ═══"
+echo ""
+
+SUCCESS=0
+FAILED=0
+SKIPPED=0
+
+while IFS= read -r url; do
+    [ -z "$url" ] && continue
+
+    RESPONSE=$(curl -sf -X POST "$API_BASE/links" \
+        -H "Content-Type: application/json" \
+        -d "{\"url\": \"$url\"}" 2>&1) || true
+
+    if echo "$RESPONSE" | grep -q '"id"'; then
+        echo "  ✅ $url"
+        SUCCESS=$((SUCCESS + 1))
+    elif echo "$RESPONSE" | grep -qi 'duplicate\|already exists'; then
+        echo "  ⏭️  $url (already saved)"
+        SKIPPED=$((SKIPPED + 1))
+    else
+        echo "  ❌ $url — $(echo "$RESPONSE" | head -c 120)"
+        FAILED=$((FAILED + 1))
+    fi
+done <<< "$URLS"
+
+echo ""
+echo "═══ Summary ═══"
+echo "  ✅ Imported:  $SUCCESS"
+echo "  ⏭️  Duplicates: $SKIPPED"
+echo "  ❌ Failed:    $FAILED"
+echo "  📊 Total:     $TOTAL"
