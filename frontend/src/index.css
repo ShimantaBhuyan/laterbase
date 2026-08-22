@@ -169,3 +169,43 @@ input.ghost::placeholder {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 0.6; }
 }
+
+/* Ask overlay */
+.ask-input:focus {
+  border-color: var(--color-accent);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: none; }
+}
+.ask-fade {
+  animation: fade-in 0.2s ease-out;
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.ask-cursor {
+  animation: cursor-blink 1s step-end infinite;
+  color: var(--color-accent);
+}
+
+@keyframes row-flash {
+  0% { background: var(--color-surface-hover); border-color: var(--color-accent); }
+  100% { background: var(--color-surface); border-color: var(--color-border); }
+}
+.ask-row[data-flash="true"] {
+  animation: row-flash 1.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ask-fade,
+  .ask-row[data-flash="true"] {
+    animation: none;
+  }
+  .ask-cursor {
+    animation: none;
+  }
+}

@@ -18,6 +18,7 @@ WhatsApp → Hermes → POST /api/links → River job queue → fetch → LLM ca
 - **Groups** — organize links into color-coded groups (articles, github, docs, videos, tools, uncategorized) or create your own
 - **Content preview** — read saved page text inline, with an "Open in browser" fallback for sites that block embedding
 - **Notes** — attach free-form notes to any link
+- **Ask your archive** — press `⌘K` (or the Ask button) to ask a natural-language question; gpt-5.6-luna ranks your saved links by relevance, streams a cited answer, and lists the matching links — every claim traceable to something you actually saved
 - **Pluggable fetcher** — simple HTTP + readability extraction by default, with an optional Crawl4AI service for JS-heavy pages
 
 ## Tech Stack
@@ -25,7 +26,7 @@ WhatsApp → Hermes → POST /api/links → River job queue → fetch → LLM ca
 - **Backend**: Go (chi router, pgx pool, goose migrations, River job queue)
 - **Frontend**: React + Vite, Tailwind v4, TanStack Query, React Router
 - **Database**: PostgreSQL 17
-- **LLM**: gpt-4o-mini via OpenAI API
+- **LLM**: gpt-4o-mini (categorization/summarization) + gpt-5.6-luna (Ask feature) via OpenAI API
 - **Optional**: Crawl4AI (Docker profile) for JavaScript-heavy sites
 
 ## Quick Start
@@ -58,8 +59,12 @@ Environment variables (see `.env.example`):
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `LLM_API_KEY` | Yes | OpenAI API key for categorization + summarization |
+| `LLM_API_KEY` | Yes | OpenAI API key for categorization, summarization, and Ask |
+| `LLM_MODEL` | No | Model for link processing (default: `gpt-4o-mini`) |
+| `ASK_LLM_MODEL` | No | Model for the Ask feature (default: `gpt-5.6-luna`) |
 | `CRAWL4AI_URL` | No | Crawl4AI endpoint; empty = simple HTTP fetcher |
+
+Note: newer OpenAI models (like gpt-5.6-luna) only support `max_completion_tokens` and the default temperature — the Ask pipeline already accounts for this.
 
 The fetcher mode can also be toggled at runtime:
 
@@ -96,6 +101,7 @@ All routes are under `/api` (plus `GET /health`). Highlights:
 | `GET` / `POST` / `PUT` / `DELETE` | `/api/groups[...]` | Manage groups |
 | `GET` | `/api/stats` | Counts by status, group, and source type |
 | `GET` / `PUT` | `/api/config` | Read/update fetcher mode |
+| `POST` | `/api/ask` | Ask a question over the archive — body: `{"question": "...", "include_full_text": false}`; responds with SSE (`citations` → `delta` → `done`) |
 | `GET` | `/health` | DB ping + queue status |
 
 See `cmd/server/main.go` for the full route table.
@@ -115,6 +121,7 @@ laterbase/
 │       ├── handlers/        # HTTP handlers (chi)
 │       ├── fetcher/         # Simple HTTP + Crawl4AI implementations
 │       ├── categorizer/     # gpt-4o-mini call
+│       ├── ask/             # Ask pipeline: rank links + stream grounded answer
 │       ├── workers/         # River ProcessLink job
 │       └── content/         # HTML sanitizer
 └── frontend/
@@ -122,7 +129,7 @@ laterbase/
         ├── pages/           # Dashboard, LinkDetail, Groups
         ├── components/      # LinkCard, ContentPreview, etc.
         ├── hooks/           # TanStack Query hooks
-        └── api/             # Axios client
+        └── api/             # Axios client + SSE ask client
 ```
 
 ## Documentation

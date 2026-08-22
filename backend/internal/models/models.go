@@ -91,6 +91,36 @@ type Config struct {
 	Value string `json:"value"`
 }
 
+// AskCandidate is a lightweight link representation used for ask ranking.
+type AskCandidate struct {
+	ID        uuid.UUID `json:"id"`
+	URL       string    `json:"url"`
+	Title     string    `json:"title"`
+	Summary   string    `json:"summary"`
+	CreatedAt time.Time `json:"created_at"`
+	GroupIDs  []string  `json:"group_ids"`
+}
+
+// AskCitation maps a matched link to the reason it was cited, carrying
+// enough display data for the frontend result rows.
+type AskCitation struct {
+	LinkID    uuid.UUID `json:"link_id"`
+	Reason    string    `json:"reason"`
+	URL       string    `json:"url"`
+	Title     string    `json:"title"`
+	CreatedAt time.Time `json:"created_at"`
+	GroupIDs  []string  `json:"group_ids"`
+}
+
+// AskResult is the final result of an ask query.
+type AskResult struct {
+	Answer       string
+	Citations    []AskCitation
+	InputTokens  int
+	OutputTokens int
+	Model        string
+}
+
 // Stats holds aggregate statistics about links.
 type Stats struct {
 	TotalLinks       int            `json:"total_links"`

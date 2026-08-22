@@ -61,6 +61,7 @@ func main() {
 	groupHandler := handlers.NewGroupHandler(pool)
 	statsHandler := handlers.NewStatsHandler(pool)
 	configHandler := handlers.NewConfigHandler(pool)
+	askHandler := handlers.NewAskHandler(pool, cfg)
 
 	// Create router
 	r := chi.NewRouter()
@@ -70,7 +71,8 @@ func main() {
 	r.Use(chimw.Recoverer)
 	r.Use(chimw.RealIP)
 	r.Use(corsMiddleware)
-	r.Use(chimw.Timeout(30 * time.Second))
+	// Per-request timeout, except SSE endpoints (/api/ask) which stream long-running answers
+	r.Use(timeoutUnless("/api/ask", 30*time.Second))
 
 	// Routes
 	r.Get("/health", healthHandler.Check)
@@ -92,6 +94,8 @@ func main() {
 
 		r.Get("/config", configHandler.Get)
 		r.Put("/config", configHandler.Update)
+
+		r.Post("/ask", askHandler.Ask)
 	})
 
 	// Start HTTP server
@@ -101,7 +105,7 @@ func main() {
 		Handler:           r,
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
-		WriteTimeout:      30 * time.Second,
+		WriteTimeout:      0, // SSE (/api/ask) streams can run long; per-route timeouts handle abuse
 		IdleTimeout:       120 * time.Second,
 	}
 
@@ -152,4 +156,20 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+// timeoutUnless applies a request timeout except for the given path,
+// which streams long-running responses.
+func timeoutUnless(path string, d time.Duration) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == path {
+				next.ServeHTTP(w, r)
+				return
+			}
+			ctx, cancel := context.WithTimeout(r.Context(), d)
+			defer cancel()
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }

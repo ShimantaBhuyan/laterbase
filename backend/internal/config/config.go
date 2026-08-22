@@ -11,6 +11,7 @@ type Config struct {
 	Port        string
 	LLMAPIKey   string
 	LLMModel    string
+	AskLLMModel string
 	Crawl4AIURL string
 }
 
@@ -23,6 +24,7 @@ func Load() *Config {
 		Port:        envOrDefault("PORT", "8080"),
 		LLMAPIKey:   os.Getenv("LLM_API_KEY"),
 		LLMModel:    envOrDefault("LLM_MODEL", "gpt-4o-mini"),
+		AskLLMModel: envOrDefault("ASK_LLM_MODEL", "gpt-5.6-luna"),
 		Crawl4AIURL: os.Getenv("CRAWL4AI_URL"),
 	}
 

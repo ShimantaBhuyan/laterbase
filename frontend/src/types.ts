@@ -48,3 +48,25 @@ export interface Stats {
 export interface Config {
   fetcher_mode: 'simple' | 'crawl4ai';
 }
+
+// ── Ask ──────────────────────────────────────────────────
+
+export interface AskCitation {
+  link_id: string;
+  reason: string;
+  url: string;
+  title: string;
+  created_at: string;
+  group_ids: string[];
+}
+
+export type AskStatus = 'ok' | 'no_matches' | 'empty_archive';
+
+export interface AskDonePayload {
+  status: AskStatus;
+  answer: string;
+  model: string;
+  citations: AskCitation[];
+  input_tokens?: number;
+  output_tokens?: number;
+}

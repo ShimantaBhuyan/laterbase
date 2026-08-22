@@ -1,10 +1,24 @@
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { useStats } from '../hooks/useStats';
 import { useTheme } from '../hooks/useTheme';
+import AskOverlay from './AskOverlay';
 
 export default function Layout() {
   const { data: stats } = useStats();
   const { theme, toggleTheme } = useTheme();
+  const [askOpen, setAskOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setAskOpen((v) => !v);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -74,6 +88,27 @@ export default function Layout() {
             Groups
           </NavLink>
 
+          {/* Ask button */}
+          <button
+            onClick={() => setAskOpen(true)}
+            title="Ask your archive (⌘K)"
+            style={{
+              marginLeft: 4,
+              padding: '4px 12px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--color-border)',
+              background: 'var(--color-surface)',
+              color: 'var(--color-text-primary)',
+              fontSize: 13,
+              fontWeight: 510,
+              cursor: 'pointer',
+              lineHeight: 1.4,
+              transition: 'background 0.15s ease, border-color 0.15s ease',
+            }}
+          >
+            Ask <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>⌘K</span>
+          </button>
+
           {/* Theme toggle */}
           <button
             onClick={toggleTheme}
@@ -99,6 +134,8 @@ export default function Layout() {
       <main style={{ flex: 1, overflow: 'auto', padding: 20 }}>
         <Outlet />
       </main>
+
+      {askOpen && <AskOverlay onClose={() => setAskOpen(false)} />}
     </div>
   );
 }
