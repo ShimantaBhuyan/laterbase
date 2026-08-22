@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/devkrishna/link-groupy/backend/internal/db"
+	"github.com/devkrishna/laterbase/backend/internal/db"
 )
 
 // ConfigHandler handles config endpoints.

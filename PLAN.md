@@ -1,4 +1,4 @@
-# Link Groupy — Read-Later Link Collector & Organizer
+# laterbase — Read-Later Link Collector & Organizer
 
 > **For Hermes:** Use the "Large Project Implementation from Plan" workflow (development-workflows skill) to implement this plan via parallel subagent delegation. **Do NOT start building without explicit user confirmation.**
 
@@ -53,10 +53,10 @@ iPhone Chrome tabs → Share → Copy link → Paste into WhatsApp self-chat
 
 ```
 ### `link <url>` or `save <url>`
-- POST the URL to the Link Groupy backend at http://localhost:8080/api/links
+- POST the URL to the laterbase backend at http://localhost:8080/api/links
 - Body: {"url": "<the url>"}
 - Acknowledge with: "Saved. I'll fetch and summarize it shortly."
-- If the API is unreachable (Orbstack not running), respond: "Link Groupy isn't running. Start it from Orbstack first."
+- If the API is unreachable (Orbstack not running), respond: "laterbase isn't running. Start it from Orbstack first."
 ```
 
 ### Toggle Crawl4AI Mode
@@ -202,7 +202,7 @@ Reference: `popular-web-designs` skill → `templates/linear.app.md`
 ### Pages
 
 **1. Dashboard (`/`)** — Main Link Feed
-- Top bar: "Link Groupy" + total count + "Add Link" button (indigo CTA)
+- Top bar: "laterbase" + total count + "Add Link" button (indigo CTA)
 - Search input: ghost-style, `rgba(255,255,255,0.02)` bg
 - Group filter chips: horizontal scroll, pill-shaped (9999px), count badges
 - Status filter: dropdown or inline pills
@@ -251,7 +251,7 @@ Status variants:
 ## Project Structure
 
 ```
-link-groupy/
+laterbase/
 ├── docker-compose.yml
 ├── .env.example
 ├── .gitignore
@@ -328,15 +328,15 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: linkgroupy
-      POSTGRES_USER: linkgroupy
-      POSTGRES_PASSWORD: linkgroupy_dev
+      POSTGRES_DB: laterbase
+      POSTGRES_USER: laterbase
+      POSTGRES_PASSWORD: laterbase_dev
     ports:
       - "5433:5432"          # avoid conflict with other PG instances
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U linkgroupy -d linkgroupy"]
+      test: ["CMD-SHELL", "pg_isready -U laterbase -d laterbase"]
       interval: 5s
       retries: 5
 
@@ -347,7 +347,7 @@ services:
     volumes:
       - ./backend:/app
     environment:
-      DATABASE_URL: postgres://linkgroupy:linkgroupy_dev@postgres:5432/linkgroupy?sslmode=disable
+      DATABASE_URL: postgres://laterbase:laterbase_dev@postgres:5432/laterbase?sslmode=disable
       PORT: "8080"
       LLM_API_KEY: ${LLM_API_KEY}
       LLM_MODEL: gpt-4o-mini
@@ -463,7 +463,7 @@ volumes:
 | LLM hallucinates summary from thin context | System prompt explicitly says "set summary to empty string if content is inaccessible" |
 | Crawl4AI not running when toggled | API detects connection failure, auto-falls back to simple HTTP, logs warning |
 | Page content too large for LLM | Truncate to first 3000 words (~12K chars) before sending |
-| Orbstack not running | Hermes responds "Link Groupy isn't running. Start it from Orbstack first." |
+| Orbstack not running | Hermes responds "laterbase isn't running. Start it from Orbstack first." |
 
 ---
 
@@ -479,7 +479,7 @@ Two design systems are available:
 | Tag/badge system | Pill badges, indigo accent | Tinted blue pills |
 | Font | Inter Variable, compressed tracking | NotionInter, warm spacing |
 
-**Recommendation: Linear dark.** Link Groupy is a dashboard/tool, not a reading app. The dark canvas is better for scanning many links, and Linear's translucent surface system is purpose-built for data-dense UIs. The Notion system could work as a light-mode toggle later.
+**Recommendation: Linear dark.** laterbase is a dashboard/tool, not a reading app. The dark canvas is better for scanning many links, and Linear's translucent surface system is purpose-built for data-dense UIs. The Notion system could work as a light-mode toggle later.
 
 ---
 

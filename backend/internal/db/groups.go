@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/devkrishna/link-groupy/backend/internal/models"
+	"github.com/devkrishna/laterbase/backend/internal/models"
 )
 
 // ListGroupsWithCounts returns all groups with their link counts.

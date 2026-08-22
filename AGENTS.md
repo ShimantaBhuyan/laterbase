@@ -1,4 +1,4 @@
-# Link Groupy — Agent Instructions
+# laterbase — Agent Instructions
 
 ## Quick start
 
@@ -31,7 +31,7 @@ WhatsApp → Hermes → POST /api/links → River job queue → fetch → LLM ca
 - **TypeScript build**: `tsc -b && vite build` (not just `vite build`).
 - **Tailwind v4** — uses `@import "tailwindcss"` (no `tailwind.config.js`). CSS custom properties for Linear-style tokens in `index.css`.
 - **`@/*` path alias** is in tsconfig `paths` but **no Vite resolve alias** is configured — importing `@/...` will fail at runtime.
-- **Go version**: `go 1.25.7` in `go.mod`. Module path: `github.com/devkrishna/link-groupy/backend`.
+- **Go version**: `go 1.25.7` in `go.mod`. Module path: `github.com/devkrishna/laterbase/backend`.
 - **`writeJSON` helper** lives in `handlers/links.go` — reused across handler files in the same package.
 - **`strings` not imported** in `groups.go` — uses custom `stringsJoin` instead.
 - **Content storage**: `content_text` column stores cleaned *plain text* (from `fetcher.cleanHTML`), not HTML. `ContentPreview.tsx` renders a persistent toolbar (URL, "Show text"/"Hide text" toggle for content_text, "Open in browser ↗" link) above the iframe. The iframe fills the remaining space — no CSP/X-Frame-Options detection overlay needed, since the "Open in browser" link is always visible.

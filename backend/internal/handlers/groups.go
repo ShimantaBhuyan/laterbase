@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/devkrishna/link-groupy/backend/internal/db"
-	"github.com/devkrishna/link-groupy/backend/internal/models"
+	"github.com/devkrishna/laterbase/backend/internal/db"
+	"github.com/devkrishna/laterbase/backend/internal/models"
 )
 
 // GroupHandler handles group-related HTTP requests.

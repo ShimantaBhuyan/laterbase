@@ -19,7 +19,7 @@ func Load() *Config {
 	_ = godotenv.Load()
 
 	cfg := &Config{
-		DatabaseURL: envOrDefault("DATABASE_URL", "postgres://linkgroupy:linkgroupy_dev@localhost:5433/linkgroupy?sslmode=disable"),
+		DatabaseURL: envOrDefault("DATABASE_URL", "postgres://laterbase:laterbase_dev@localhost:5433/laterbase?sslmode=disable"),
 		Port:        envOrDefault("PORT", "8080"),
 		LLMAPIKey:   os.Getenv("LLM_API_KEY"),
 		LLMModel:    envOrDefault("LLM_MODEL", "gpt-4o-mini"),

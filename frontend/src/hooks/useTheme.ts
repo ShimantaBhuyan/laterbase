@@ -4,7 +4,7 @@ type Theme = 'dark' | 'light';
 
 function getStoredTheme(): Theme {
   try {
-    const stored = localStorage.getItem('link-groupy-theme');
+    const stored = localStorage.getItem('laterbase-theme');
     if (stored === 'dark' || stored === 'light') return stored;
   } catch {}
   return 'light';
@@ -16,7 +16,7 @@ export function useTheme() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     try {
-      localStorage.setItem('link-groupy-theme', theme);
+      localStorage.setItem('laterbase-theme', theme);
     } catch {}
   }, [theme]);
 

@@ -1,5 +1,5 @@
 ---
-name: Link Groupy
+name: laterbase
 description: A warm-editorial link-archiving dashboard with dark toggle
 colors:
   canvas: "#faf7f2"
@@ -100,7 +100,7 @@ components:
     rounded: "{rounded.md}"
     padding: "4px 8px"
 ---
-# Design System: Link Groupy
+# Design System: laterbase
 
 ## 1. Overview
 

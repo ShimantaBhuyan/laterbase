@@ -6,7 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/devkrishna/link-groupy/backend/internal/models"
+	"github.com/devkrishna/laterbase/backend/internal/models"
 )
 
 // StatsHandler handles the stats endpoint.

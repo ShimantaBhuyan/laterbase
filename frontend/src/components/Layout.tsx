@@ -27,7 +27,7 @@ export default function Layout() {
             color: 'var(--color-text-primary)',
           }}
         >
-          Link Groupy
+          laterbase
         </span>
         {stats !== undefined && (
           <span

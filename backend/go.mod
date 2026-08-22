@@ -1,4 +1,4 @@
-module github.com/devkrishna/link-groupy/backend
+module github.com/devkrishna/laterbase/backend
 
 go 1.25.7
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# link-groupy-dump-from-notes — one-time bulk import of URLs from Apple Notes
+# laterbase-dump-from-notes — one-time bulk import of URLs from Apple Notes
 #
 # Usage:
 #   ./scripts/dump-from-notes                              # list notes with "Links"
@@ -12,7 +12,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 MEMO="${HOME}/.local/bin/memo"
-API_BASE="${LINK_GROUPY_API:-http://localhost:8080/api}"
+API_BASE="${LATERBASE_API:-http://localhost:8080/api}"
 
 # --- parse args ---
 LINKS_NOTE_NUM=""
@@ -74,13 +74,13 @@ fi
 
 # --- check API ---
 if ! curl -sf "$API_BASE/../health" 2>/dev/null; then
-    echo "❌ Link Groupy API not reachable at $API_BASE"
+    echo "❌ laterbase API not reachable at $API_BASE"
     echo "   Is the stack running? Try: docker compose up -d"
     exit 1
 fi
 
 # --- import ---
-echo "═══ Importing URLs to Link Groupy ═══"
+echo "═══ Importing URLs to laterbase ═══"
 echo ""
 
 SUCCESS=0

@@ -15,10 +15,10 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 
-	"github.com/devkrishna/link-groupy/backend/internal/config"
-	"github.com/devkrishna/link-groupy/backend/internal/db"
-	"github.com/devkrishna/link-groupy/backend/internal/handlers"
-	"github.com/devkrishna/link-groupy/backend/internal/workers"
+	"github.com/devkrishna/laterbase/backend/internal/config"
+	"github.com/devkrishna/laterbase/backend/internal/db"
+	"github.com/devkrishna/laterbase/backend/internal/handlers"
+	"github.com/devkrishna/laterbase/backend/internal/workers"
 )
 
 func main() {

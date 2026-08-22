@@ -1,6 +1,6 @@
-# Link Groupy
+# laterbase
 
-A lightweight, self-hosted read-later link collector. Share a link from WhatsApp (via a Hermes agent), paste it into the dashboard, and Link Groupy fetches the page, categorizes it with an LLM, generates a summary, and files it into a group — all in a clean, minimal dashboard.
+A lightweight, self-hosted read-later link collector. Share a link from WhatsApp (via a Hermes agent), paste it into the dashboard, and laterbase fetches the page, categorizes it with an LLM, generates a summary, and files it into a group — all in a clean, minimal dashboard.
 
 ```
 WhatsApp → Hermes → POST /api/links → River job queue → fetch → LLM categorize → store
@@ -73,10 +73,10 @@ Add the following to your Hermes agent's `SOUL.md` to capture links from WhatsAp
 
 ```
 ### `link <url>` or `save <url>`
-- POST the URL to the Link Groupy backend at http://localhost:8080/api/links
+- POST the URL to the laterbase backend at http://localhost:8080/api/links
 - Body: {"url": "<the url>"}
 - Acknowledge with: "Saved. I'll fetch and summarize it shortly."
-- If the API is unreachable, respond: "Link Groupy isn't running. Start it first."
+- If the API is unreachable, respond: "laterbase isn't running. Start it first."
 ```
 
 ## API
@@ -101,7 +101,7 @@ See `cmd/server/main.go` for the full route table.
 ## Project Structure
 
 ```
-link-groupy/
+laterbase/
 ├── docker-compose.yml
 ├── .env.example
 ├── PLAN.md                  # Original build plan & design decisions

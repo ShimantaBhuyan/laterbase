@@ -14,9 +14,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 
-	"github.com/devkrishna/link-groupy/backend/internal/db"
-	"github.com/devkrishna/link-groupy/backend/internal/models"
-	"github.com/devkrishna/link-groupy/backend/internal/workers"
+	"github.com/devkrishna/laterbase/backend/internal/db"
+	"github.com/devkrishna/laterbase/backend/internal/models"
+	"github.com/devkrishna/laterbase/backend/internal/workers"
 )
 
 // LinkHandler handles link-related HTTP requests.

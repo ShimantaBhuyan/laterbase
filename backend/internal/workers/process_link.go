@@ -9,11 +9,11 @@ import (
 
 	"github.com/riverqueue/river"
 
-	"github.com/devkrishna/link-groupy/backend/internal/categorizer"
-	"github.com/devkrishna/link-groupy/backend/internal/config"
-	"github.com/devkrishna/link-groupy/backend/internal/db"
-	"github.com/devkrishna/link-groupy/backend/internal/fetcher"
-	"github.com/devkrishna/link-groupy/backend/internal/models"
+	"github.com/devkrishna/laterbase/backend/internal/categorizer"
+	"github.com/devkrishna/laterbase/backend/internal/config"
+	"github.com/devkrishna/laterbase/backend/internal/db"
+	"github.com/devkrishna/laterbase/backend/internal/fetcher"
+	"github.com/devkrishna/laterbase/backend/internal/models"
 )
 
 // Known LLM pricing per model ($ per 1M tokens).
