@@ -1,5 +1,7 @@
 # laterbase
 
+<img width="2304" height="1424" alt="laterbase" src="https://github.com/user-attachments/assets/17a0cc5c-b3b3-4394-aeb0-c3c2bd633e41" />
+
 A lightweight, self-hosted read-later link collector. Share a link from WhatsApp (via a Hermes agent), paste it into the dashboard, and laterbase fetches the page, categorizes it with an LLM, generates a summary, and files it into a group — all in a clean, minimal dashboard.
 
 ```
