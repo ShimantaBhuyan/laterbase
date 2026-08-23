@@ -211,6 +211,13 @@ func (h *LinkHandler) Reprocess(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Drop stale auto-assigned groups; manually assigned ones survive re-categorization
+	if err := db.ClearAutoGroups(r.Context(), h.pool, []uuid.UUID{id}); err != nil {
+		log.Printf("ClearAutoGroups error: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to clear link groups"})
+		return
+	}
+
 	// Enqueue new processing job
 	_, err = h.riverClient.Insert(r.Context(), &workers.ProcessLinkArgs{
 		LinkID: id,
@@ -223,6 +230,37 @@ func (h *LinkHandler) Reprocess(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"message": "reprocess queued"})
+}
+
+// ReprocessAll handles POST /api/links/reprocess-all
+func (h *LinkHandler) ReprocessAll(w http.ResponseWriter, r *http.Request) {
+	// Guard against concurrent bulk runs — only one active reprocess_all job allowed
+	var active int
+	err := h.pool.QueryRow(r.Context(), `
+		SELECT COUNT(*) FROM river_job
+		WHERE kind = $1 AND state IN ($2, $3, $4, $5)
+	`, "reprocess_all", "available", "scheduled", "running", "retryable").Scan(&active)
+	if err != nil {
+		log.Printf("ReprocessAll guard query error: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to check reprocess status"})
+		return
+	}
+	if active > 0 {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "a bulk reprocess is already in progress"})
+		return
+	}
+
+	job, err := h.riverClient.Insert(r.Context(), &workers.ReprocessAllArgs{}, nil)
+	if err != nil {
+		log.Printf("Failed to enqueue reprocess-all job: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to enqueue reprocess job"})
+		return
+	}
+
+	writeJSON(w, http.StatusAccepted, map[string]interface{}{
+		"queued": true,
+		"job_id": job.Job.ID,
+	})
 }
 
 // writeJSON is a helper to write JSON responses.

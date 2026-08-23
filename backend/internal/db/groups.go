@@ -40,6 +40,25 @@ func ListGroupsWithCounts(ctx context.Context, pool *pgxpool.Pool) ([]*models.Gr
 	return groups, nil
 }
 
+// ListGroupNames returns the names of all groups.
+func ListGroupNames(ctx context.Context, pool *pgxpool.Pool) ([]string, error) {
+	rows, err := pool.Query(ctx, `SELECT name FROM groups ORDER BY sort_order ASC, name ASC`)
+	if err != nil {
+		return nil, fmt.Errorf("ListGroupNames: %w", err)
+	}
+	defer rows.Close()
+
+	names := []string{}
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, fmt.Errorf("ListGroupNames scan: %w", err)
+		}
+		names = append(names, name)
+	}
+	return names, rows.Err()
+}
+
 // CreateGroup creates a new group.
 func CreateGroup(ctx context.Context, pool *pgxpool.Pool, name, color string, sortOrder int) (*models.Group, error) {
 	g := &models.Group{}

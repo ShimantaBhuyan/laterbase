@@ -20,7 +20,9 @@ type CategorizeResult struct {
 }
 
 // Categorize uses the LLM to categorize a URL and its content.
-func Categorize(ctx context.Context, apiKey, model, url, content string) (*CategorizeResult, error) {
+// allowedGroups is the list of group names the suggestion must come from;
+// "uncategorized" is always allowed as a last resort.
+func Categorize(ctx context.Context, apiKey, model, url, content string, allowedGroups []string) (*CategorizeResult, error) {
 	if apiKey == "" {
 		return fallbackCategorize(url, content), nil
 	}
@@ -30,17 +32,38 @@ func Categorize(ctx context.Context, apiKey, model, url, content string) (*Categ
 		content = content[:12000]
 	}
 
+	groupsList := allowedGroups
+	if len(groupsList) == 0 {
+		groupsList = []string{"articles", "github", "docs", "videos", "tools"}
+	}
+	hasUncategorized := false
+	for _, g := range groupsList {
+		if strings.EqualFold(g, "uncategorized") {
+			hasUncategorized = true
+			break
+		}
+	}
+	if !hasUncategorized {
+		groupsList = append(groupsList, "uncategorized")
+	}
+	for i, g := range groupsList {
+		groupsList[i] = strings.TrimSpace(g)
+	}
+
 	systemPrompt := `You are a link categorization assistant. Given a URL and the extracted page content, return ONLY valid JSON (no markdown, no code fences):
 {
   "source_type": "article|github|youtube|twitter|docs|tools|other",
-  "suggested_group": "articles|github|docs|videos|tools|uncategorized",
+  "suggested_group": one of [` + quoteJoin(groupsList) + `],
   "summary": "2-3 sentence factual summary of what this page contains",
   "title": null or "cleaned title if the extracted one is missing or clearly wrong"
 }
 
 Rules:
 - Infer source_type from URL domain and content patterns
-- Map to the correct group: youtube/vimeo -> videos, github -> github, documentation -> docs, tools/SaaS -> tools, blog posts/news -> articles
+- suggested_group MUST be exactly one of the listed group names — pick whichever best matches the page's TOPIC (what it is about), not just its format (what kind of site it is); do not invent new groups
+- Format groups: articles=blog/news posts, github=code repos, docs=documentation sites, videos, tools=SaaS/dev utilities. A topic-specific group name in the list (anything else) wins over these whenever the page is primarily ABOUT that topic — e.g. an AI agents framework is about AI, so use an AI-named group rather than "tools"
+- Look at the meta description, headings, and recurring terms in the content to determine the topic; also consider hints in the domain name (".ai", "ml", etc.)
+- Use "uncategorized" ONLY when no listed group plausibly relates to the page
 - If content is empty or very short (< 50 chars), set source_type to 'other', suggested_group to 'uncategorized', summary to empty string
 - Keep summary factual and concise (2-3 sentences max)
 - If the extracted title is clearly wrong (garbage text, error page title), suggest a better one`
@@ -119,7 +142,11 @@ Rules:
 	if result.SourceType == "" {
 		result.SourceType = "other"
 	}
-	if result.SuggestedGroup == "" {
+	// Guard against invented group names — snap to the allowed group's exact
+	// casing (GetGroupByName matches exactly), or fall back to uncategorized.
+	if g, ok := matchFold(groupsList, result.SuggestedGroup); ok {
+		result.SuggestedGroup = g
+	} else {
 		result.SuggestedGroup = "uncategorized"
 	}
 
@@ -129,6 +156,25 @@ Rules:
 	result.ModelUsed = model
 
 	return &result, nil
+}
+
+// quoteJoin renders group names as a quoted, comma-separated JSON array fragment.
+func quoteJoin(items []string) string {
+	quoted := make([]string, len(items))
+	for i, item := range items {
+		quoted[i] = `"` + item + `"`
+	}
+	return strings.Join(quoted, ", ")
+}
+
+// matchFold returns the first item equal to s (case-insensitive) and whether it was found.
+func matchFold(items []string, s string) (string, bool) {
+	for _, item := range items {
+		if strings.EqualFold(item, s) {
+			return item, true
+		}
+	}
+	return "", false
 }
 
 // fallbackCategorize provides a simple URL-based categorization without an LLM.

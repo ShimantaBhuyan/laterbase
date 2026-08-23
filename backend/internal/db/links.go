@@ -224,7 +224,7 @@ func UpdateLink(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID, upd model
 			return nil, fmt.Errorf("UpdateLink delete groups: %w", err)
 		}
 		for _, gid := range upd.GroupIDs {
-			if _, err := pool.Exec(ctx, `INSERT INTO link_groups (link_id, group_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, id, gid); err != nil {
+			if _, err := pool.Exec(ctx, `INSERT INTO link_groups (link_id, group_id, assigned_by) VALUES ($1, $2, 'manual') ON CONFLICT DO NOTHING`, id, gid); err != nil {
 				return nil, fmt.Errorf("UpdateLink insert group: %w", err)
 			}
 		}
@@ -237,7 +237,7 @@ func UpdateLink(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID, upd model
 			return nil, fmt.Errorf("UpdateLink interesting group: %w", err)
 		}
 		if *upd.IsInteresting {
-			if _, err := pool.Exec(ctx, `INSERT INTO link_groups (link_id, group_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, id, interestingGroup.ID); err != nil {
+			if _, err := pool.Exec(ctx, `INSERT INTO link_groups (link_id, group_id, assigned_by) VALUES ($1, $2, 'manual') ON CONFLICT (link_id, group_id) DO UPDATE SET assigned_by = 'manual'`, id, interestingGroup.ID); err != nil {
 				return nil, fmt.Errorf("UpdateLink add interesting: %w", err)
 			}
 		} else {
@@ -317,11 +317,46 @@ func InsertLinkCost(ctx context.Context, pool *pgxpool.Pool, linkID uuid.UUID, u
 // AddLinkGroup adds a single group to a link (used by the auto-categorization worker).
 func AddLinkGroup(ctx context.Context, pool *pgxpool.Pool, linkID, groupID uuid.UUID) error {
 	_, err := pool.Exec(ctx,
-		`INSERT INTO link_groups (link_id, group_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+		`INSERT INTO link_groups (link_id, group_id, assigned_by) VALUES ($1, $2, 'auto') ON CONFLICT DO NOTHING`,
 		linkID, groupID,
 	)
 	if err != nil {
 		return fmt.Errorf("AddLinkGroup: %w", err)
+	}
+	return nil
+}
+
+// ClearAutoGroups removes auto-assigned group memberships for the given links,
+// preserving manually assigned ones and the user-toggled "interesting" badge.
+func ClearAutoGroups(ctx context.Context, pool *pgxpool.Pool, linkIDs []uuid.UUID) error {
+	if len(linkIDs) == 0 {
+		return nil
+	}
+	_, err := pool.Exec(ctx,
+		`DELETE FROM link_groups lg USING groups g
+		 WHERE lg.link_id = ANY($1) AND lg.assigned_by = 'auto'
+		   AND lg.group_id = g.id AND g.name <> 'interesting'`,
+		linkIDs,
+	)
+	if err != nil {
+		return fmt.Errorf("ClearAutoGroups: %w", err)
+	}
+	return nil
+}
+
+// ClearAutoGroupsTx is ClearAutoGroups within an existing transaction.
+func ClearAutoGroupsTx(ctx context.Context, tx pgx.Tx, linkIDs []uuid.UUID) error {
+	if len(linkIDs) == 0 {
+		return nil
+	}
+	_, err := tx.Exec(ctx,
+		`DELETE FROM link_groups lg USING groups g
+		 WHERE lg.link_id = ANY($1) AND lg.assigned_by = 'auto'
+		   AND lg.group_id = g.id AND g.name <> 'interesting'`,
+		linkIDs,
+	)
+	if err != nil {
+		return fmt.Errorf("ClearAutoGroupsTx: %w", err)
 	}
 	return nil
 }

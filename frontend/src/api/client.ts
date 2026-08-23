@@ -55,6 +55,16 @@ export async function reprocessLink(id: string): Promise<void> {
   await client.post(`/links/${id}/reprocess`);
 }
 
+export interface ReprocessAllResponse {
+  queued: boolean;
+  job_id: string;
+}
+
+export async function reprocessAllLinks(): Promise<ReprocessAllResponse> {
+  const res = await client.post<ReprocessAllResponse>('/links/reprocess-all');
+  return res.data;
+}
+
 // ── Groups ───────────────────────────────────────────────
 
 export async function listGroups(): Promise<GroupWithCount[]> {

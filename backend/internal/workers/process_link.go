@@ -113,12 +113,19 @@ func (w *ProcessLinkWorker) Work(ctx context.Context, job *river.Job[ProcessLink
 		return err
 	}
 
-	// Step 5: Call Categorize
-	catResult, err := categorizer.Categorize(ctx, w.cfg.LLMAPIKey, w.cfg.LLMModel, args.URL, result.ContentText)
+	// Step 5: Fetch available groups so the LLM can pick from real groups
+	groupNames, err := db.ListGroupNames(ctx, w.pool)
+	if err != nil {
+		log.Printf("ListGroupNames error: %v", err)
+		// Non-fatal — categorizer falls back to its default list
+	}
+
+	// Step 5b: Call Categorize
+	catResult, err := categorizer.Categorize(ctx, w.cfg.LLMAPIKey, w.cfg.LLMModel, args.URL, result.ContentText, groupNames)
 	if err != nil {
 		log.Printf("Categorize error for %s: %v", args.LinkID, err)
 		// Fallback categorization
-		catResult, _ = categorizer.Categorize(ctx, "", "", args.URL, result.ContentText)
+		catResult, _ = categorizer.Categorize(ctx, "", "", args.URL, result.ContentText, groupNames)
 	}
 
 	// Step 6: Find the suggested group

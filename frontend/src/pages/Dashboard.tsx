@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useLinks } from '../hooks/useLinks';
+import { useLinks, useReprocessAllLinks } from '../hooks/useLinks';
 import { useGroups } from '../hooks/useGroups';
 import { useStats } from '../hooks/useStats';
 import LinkCard from '../components/LinkCard';
@@ -79,6 +79,13 @@ export default function Dashboard() {
 
   const { data: groups } = useGroups();
   const { data: stats } = useStats();
+  const reprocessAll = useReprocessAllLinks();
+
+  const inFlight =
+    (stats?.by_status['new'] ?? 0) +
+    (stats?.by_status['fetching'] ?? 0) +
+    (stats?.by_status['processing'] ?? 0);
+  const isProcessing = inFlight > 0;
 
   const updateParam = useCallback(
     (key: string, value: string | null) => {
@@ -151,21 +158,75 @@ export default function Dashboard() {
             </span>
           )}
         </div>
-        <button
-          onClick={() => setShowAddDialog(true)}
-          style={{
-            padding: '8px 16px',
-            borderRadius: 'var(--radius-md)',
-            border: 'none',
-            background: 'var(--color-accent)',
-            color: '#fff',
-            fontSize: 13,
-            fontWeight: 510,
-            cursor: 'pointer',
-          }}
-        >
-          Add Link
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {isProcessing && (
+            <span
+              style={{
+                fontSize: 12,
+                color: 'var(--color-text-muted)',
+              }}
+            >
+              Reprocessing… {inFlight} in queue
+            </span>
+          )}
+          {reprocessAll.isError && (
+            <span
+              style={{
+                fontSize: 12,
+                color: 'var(--color-red, #d64545)',
+              }}
+            >
+              {reprocessAll.isError
+                ? ((reprocessAll.error as { response?: { data?: { error?: string } } }).response?.data?.error ??
+                  (reprocessAll.error as Error).message)
+                : ''}
+            </span>
+          )}
+          <button
+            onClick={() => {
+              const count = stats?.total_links ?? 0;
+              if (
+                window.confirm(
+                  `Re-fetch and re-categorize all ${count} links? This will run in the background.`
+                )
+              ) {
+                reprocessAll.mutate();
+              }
+            }}
+            disabled={isProcessing || reprocessAll.isPending || (stats?.total_links ?? 0) === 0}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--color-border)',
+              background: 'transparent',
+              color: 'var(--color-text-secondary)',
+              fontSize: 13,
+              fontWeight: 510,
+              cursor:
+                isProcessing || reprocessAll.isPending || (stats?.total_links ?? 0) === 0
+                  ? 'default'
+                  : 'pointer',
+              opacity: isProcessing || reprocessAll.isPending ? 0.5 : 1,
+            }}
+          >
+            {reprocessAll.isPending ? 'Queueing…' : 'Reprocess all'}
+          </button>
+          <button
+            onClick={() => setShowAddDialog(true)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-md)',
+              border: 'none',
+              background: 'var(--color-accent)',
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 510,
+              cursor: 'pointer',
+            }}
+          >
+            Add Link
+          </button>
+        </div>
       </div>
 
       {/* Search */}

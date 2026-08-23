@@ -6,6 +6,7 @@ import {
   updateLink,
   deleteLink,
   reprocessLink,
+  reprocessAllLinks,
 } from '../api/client';
 
 export function useLinks(params?: {
@@ -72,6 +73,18 @@ export function useReprocessLink() {
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: ['links'] });
       queryClient.invalidateQueries({ queryKey: ['links', id] });
+    },
+  });
+}
+
+export function useReprocessAllLinks() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => reprocessAllLinks(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['links'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
     },
   });
 }

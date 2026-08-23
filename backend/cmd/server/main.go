@@ -39,6 +39,7 @@ func main() {
 	workersSet := river.NewWorkers()
 	processLinkWorker := workers.NewProcessLinkWorker(pool, cfg)
 	river.AddWorker(workersSet, processLinkWorker)
+	river.AddWorker(workersSet, workers.NewReprocessAllWorker(pool))
 
 	riverClient, err := river.NewClient[pgx.Tx](riverpgxv5.New(pool), &river.Config{
 		Workers: workersSet,
@@ -79,6 +80,7 @@ func main() {
 
 	r.Route("/api", func(r chi.Router) {
 		r.Post("/links", linkHandler.Create)
+		r.Post("/links/reprocess-all", linkHandler.ReprocessAll)
 		r.Get("/links", linkHandler.List)
 		r.Get("/links/{id}", linkHandler.Get)
 		r.Put("/links/{id}", linkHandler.Update)
