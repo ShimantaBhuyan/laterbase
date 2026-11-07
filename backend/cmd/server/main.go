@@ -80,6 +80,7 @@ func main() {
 
 	r.Route("/api", func(r chi.Router) {
 		r.Post("/links", linkHandler.Create)
+		r.Post("/links/batch", linkHandler.CreateBatch)
 		r.Post("/links/reprocess-all", linkHandler.ReprocessAll)
 		r.Get("/links", linkHandler.List)
 		r.Get("/links/{id}", linkHandler.Get)

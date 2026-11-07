@@ -39,6 +39,23 @@ export async function createLink(url: string): Promise<Link> {
   return res.data;
 }
 
+export interface BatchCreateResult {
+  url: string;
+  status: 'created' | 'duplicate' | 'error';
+  error?: string;
+  link?: Link;
+}
+
+export interface BatchCreateResponse {
+  created: number;
+  results: BatchCreateResult[];
+}
+
+export async function createLinksBatch(urls: string[]): Promise<BatchCreateResponse> {
+  const res = await client.post<BatchCreateResponse>('/links/batch', { urls }, { timeout: 60_000 });
+  return res.data;
+}
+
 export async function updateLink(
   id: string,
   data: { title?: string; source_type?: string; group_ids?: string[]; notes?: string; is_interesting?: boolean }

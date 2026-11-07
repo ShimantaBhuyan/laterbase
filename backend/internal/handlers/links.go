@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -69,6 +70,82 @@ func (h *LinkHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, link)
+}
+
+// maxBatchURLs caps how many URLs one batch request may submit.
+const maxBatchURLs = 100
+
+type batchCreateInput struct {
+	URLs []string `json:"urls"`
+}
+
+type batchCreateResult struct {
+	URL    string       `json:"url"`
+	Status string       `json:"status"` // "created" | "duplicate" | "error"
+	Error  string       `json:"error,omitempty"`
+	Link   *models.Link `json:"link,omitempty"`
+}
+
+// CreateBatch handles POST /api/links/batch — adds many links at once and
+// enqueues a processing job for each newly created one.
+func (h *LinkHandler) CreateBatch(w http.ResponseWriter, r *http.Request) {
+	var input batchCreateInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+
+	// Trim and de-duplicate within the request, preserving order.
+	seen := make(map[string]bool, len(input.URLs))
+	urls := make([]string, 0, len(input.URLs))
+	for _, u := range input.URLs {
+		u = strings.TrimSpace(u)
+		if u == "" || seen[u] {
+			continue
+		}
+		seen[u] = true
+		urls = append(urls, u)
+	}
+	if len(urls) == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "at least one url is required"})
+		return
+	}
+	if len(urls) > maxBatchURLs {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": fmt.Sprintf("too many urls (max %d)", maxBatchURLs)})
+		return
+	}
+
+	results := make([]batchCreateResult, 0, len(urls))
+	jobs := make([]river.InsertManyParams, 0, len(urls))
+	created := 0
+	for _, u := range urls {
+		link, err := db.CreateLink(r.Context(), h.pool, u)
+		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+				results = append(results, batchCreateResult{URL: u, Status: "duplicate", Error: "already added"})
+				continue
+			}
+			log.Printf("CreateBatch: CreateLink(%s) error: %v", u, err)
+			results = append(results, batchCreateResult{URL: u, Status: "error", Error: "failed to create link"})
+			continue
+		}
+		created++
+		results = append(results, batchCreateResult{URL: u, Status: "created", Link: link})
+		jobs = append(jobs, river.InsertManyParams{Args: &workers.ProcessLinkArgs{LinkID: link.ID, URL: link.URL}})
+	}
+
+	if len(jobs) > 0 {
+		if _, err := h.riverClient.InsertMany(r.Context(), jobs); err != nil {
+			log.Printf("CreateBatch: failed to enqueue %d process jobs: %v", len(jobs), err)
+			// Links are still created; they can be reprocessed.
+		}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"created": created,
+		"results": results,
+	})
 }
 
 // List handles GET /api/links

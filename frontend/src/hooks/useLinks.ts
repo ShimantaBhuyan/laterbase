@@ -3,6 +3,7 @@ import {
   listLinks,
   getLink,
   createLink,
+  createLinksBatch,
   updateLink,
   deleteLink,
   reprocessLink,
@@ -36,6 +37,17 @@ export function useCreateLink() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (url: string) => createLink(url),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['links'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+    },
+  });
+}
+
+export function useCreateLinksBatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (urls: string[]) => createLinksBatch(urls),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['links'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
